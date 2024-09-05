@@ -1,0 +1,6 @@
+#IDE Files
+.idea/
+
+#CMAKE Files
+cmake-build-debug/
+CMakeLists.txt

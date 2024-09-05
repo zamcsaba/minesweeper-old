@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<!-- saved from url=(0059)file:///home/csaba/Documents/bme/minesweeper/docs/temp.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome file</title>
+  <link rel="stylesheet" href="./programmer_documentation_hu_files/style.css">
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1 id="aknakereső---programozói-dokumentáció">Aknakereső - Programozói Dokumentáció</h1>
+<h2 id="az-aknakereső-játék">Az aknakereső játék</h2>
+<p>Az aknakereső lényegében egy egyszerű logikai játék, amely egy aknamezőn játszódik, a játékos célja pedig a mezőn található aknák felderítése. Ebben több dolog segíti: megjelölheti az általa aknának vélt mezőket, megtudhatja a már felderített mezők szomszédságában levő aknák számát, továbbá ha üres mezőt talál, akkor az azzal összefüggő további üres mezők is fel lesznek derítve.</p>
+<p>A program az aknakereső játék szabályrendszere alapján működik, amely a következő fő pontokból áll:</p>
+<ul>
+<li>A játék addig tart, amíg minden egyes aknát nem tartalmazó mező fel nincs fedve.</li>
+<li>A játéknak vége, ha a játékos aknát tartalmaző mezőre lép, vagy a beállított időkorlát lejár.</li>
+<li>A játékos által elsőként kiválasztott mezőn, valamint annak szomszédságában nem lehet akna.</li>
+<li>A mező kiválasztása az egér gombjának felengedésével válik véglegessé.</li>
+<li>Az egér jobb gombjával a mező megjelölhető zászlóval, vagy kérdőjellel. Utóbbi ritkán használt.</li>
+</ul>
+<p>A  játékban előfordulhatnak olyan szituációk, amelyeket pusztán logikai úton nem lehet megoldani. Ezeket az eseteket a játék nem figyeli, ilyenkor sajnos a szerencsére van bízva a játék kimenetele.</p>
+<h2 id="a-projekt-felépítése">A projekt felépítése</h2>
+<p>A projekt három fő modulból épül fel: a főmodulból, grafikai modulból és játékmodulból. Ezekhez külön forrás- és fejlécfájlok tartoznak. Moduláris felépítése miatt a projekt könnyen átlátható.</p>
+<p>Az alábbiakban a projekt fájljainak neve és helye:</p>
+<pre><code>minesweeper/  
+│  
+└───CMakeLists.txt  
+|  
+└───src/  
+│   │───main.c  
+|   |───graphics.c  
+|   |───leaderboard.c  
+|   |───game.c  
+│   │  
+│   └───headers/  
+│       │───graphics.h  
+│       │───leaderboard.h  
+│       └───game.h  
+│  
+└───docs/  
+|   |───specification_hu.pdf  
+│   │───developer_documentation_hu.pdf  
+│   |───developer_documentation_hu.md  
+│   │───user_documentation_hu.pdf  
+│   └───user_documentation_hu.md  
+└───build/
+    |───faces.png    
+    |───fields.png    
+    |───mine_numbers.png    
+    |───numbers.png    
+    └───(results.csv)    
+</code></pre>
+<p>A program felépítéséhez az <code>src/</code> mappa fájljai szükségesek, a futtatásához viszont a <code>build/</code> mappában található <code>.png</code> kiterjesztésű képfájlok is, ugyanis ezek nélkül a játék grafikája nem fog működni.</p>
+<p>A projekt gyökérkönyvtárában található <code>CMakeLists.txt</code> fájl segíthet a projekt build-elésében. (CMake használatával)</p>
+<p>A program függvényei ebben a dokumentációban, valamint a forrásfájlokban is dokumentálva vannak. A modulok privát függvényei a <code>.c</code> fájlokban, a publikus függvényei pedig a <code>.h</code> fájlokban vannak dokumentálva.</p>
+<h3 id="főmodul">Főmodul</h3>
+<p>A program fő modulja a <code>main.c</code> forrásfájlban van implementálva. A feladata a program elindítása, a szükséges erőforrások inicializálása, a játék paramétereinek bekérése. Tartalmazza a játék alapértelmezett paramétereit is, amennyiben a felhasználó nem adna meg mást.</p>
+<p>Egyetlen függvénye a <code>main</code>, mely a program belépési pontjának felel meg. A fent írt feladatokat hajtja végre.</p>
+<h3 id="grafikai-modul">Grafikai modul</h3>
+<p>A grafikai modul tartalmaz minden megjelenítéssel kapcsolatos függvényt, változót és konstanst. Ehhez a modulhoz a <code>graphics.c</code> és <code>graphics.h</code> fájlok tartoznak.</p>
+<h4 id="típusok">Típusok</h4>
+<h5 id="graphicsassets">GraphicsAssets</h5>
+<p>Tartalmazza a megjelenítéshez szükséges grafikai erőforrásokat (ún. asseteket). Ezek közé tartoznak a</p>
+<ul>
+<li>grafikai elemek (tileset)</li>
+<li>betűtípusok</li>
+<li>színek</li>
+</ul>
+<p>Ezek az assetek egyszer kerülnek inicializálásra az <code>init_game_window([...])</code> függvényben.</p>
+<pre class=" language-c"><code class="prism  language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span> GraphicsAssets <span class="token punctuation">{</span>    
+    <span class="token comment">// Az arc különböző állapotai    </span>
+    SDL_Texture <span class="token operator">*</span>face_tiles<span class="token punctuation">;</span>    
+        
+    <span class="token comment">// A mezők lehetséges textúrái    </span>
+    SDL_Texture <span class="token operator">*</span>field_tiles<span class="token punctuation">;</span>    
+      
+    <span class="token comment">// A számláló számjainak textúrái    </span>
+    SDL_Texture <span class="token operator">*</span>number_tiles<span class="token punctuation">;</span>    
+      
+    <span class="token comment">// A szomszédos aknák számát jelző mezők textúrái    </span>
+	SDL_Texture <span class="token operator">*</span>mine_number_tiles<span class="token punctuation">;</span>   
+	
+	<span class="token comment">// Betűtípusok    TTF_Font *font_small;    </span>
+    TTF_Font <span class="token operator">*</span>font_large<span class="token punctuation">;</span>    
+      
+    <span class="token comment">// Betűszín (fekete) </span><br>    SDL_Color black<span class="token punctuation">;</span>
+<span class="token punctuation">}</span> GraphicsAssets<span class="token punctuation">;</span>   
+</code></pre>
+<h4 id="fontosabb-belső-globális-változók">Fontosabb belső globális változók</h4>
+<p>Ezek a változók a modul minden egyes függvényéhez szükségesek; a modul inicializálófüggvényének (<code>init_game_window</code>) hívása által kapnak értéket. A modulon kívül nem elérhetőek.</p>
+<h5 id="static-sdl_window-window"><code>static SDL_Window *window</code></h5>
+<p>A játékablak.</p>
+<h5 id="static-sdl_renderer-renderer"><code>static SDL_Renderer *renderer</code></h5>
+<p>A grafikai elemek kirajzolásához szükséges változó.</p>
+<h4 id="fontosabb-függvények">Fontosabb függvények:</h4>
+<h5 id="void-init_game_windowint-rows-int-cols"><code>void init_game_window(int rows, int cols)</code>:</h5>
+<p>Inicializálja a játékablakot. Kiszámítja az ablak méreteit, inicializálja az <code>SDL</code> könyvtárat, létrehozza az ablakot és a renderert. Kirajzolja az alapértelmezet hátteret. Betölti a grafikához szükséges erőforrásokat (képfájlokat).</p>
+<h5 id="void-draw_facefacetype-face"><code>void draw_face(FaceType face)</code>:</h5>
+<p>Kirajzolja a játékablak felső részében található arcot, amely a játék során különféle arckifejezéseket vesz fel, valamint rá kattintva kezdhető újra a játék.</p>
+<h5 id="void-draw_fieldsfieldset-fieldset"><code>void draw_fields(FieldSet fieldSet)</code>:</h5>
+<p>Kirajzolja a játékmezőket a játéktáblára. Mindegyiket az adatforrásnak (fieldSet) megfelelő állapotban.</p>
+<h5 id="void-draw_mine_counterint-mine_count"><code>void draw_mine_counter(int mine_count)</code>:</h5>
+<p>Kirajzolja a felderítendő aknák számát (paraméterben kapja) a játékablak bal felső sarkába.</p>
+<h5 id="void-draw_time_counterint-seconds"><code>void draw_time_counter(int seconds)</code>:</h5>
+<p>Kirajzolja a játék kezdetétől eltelt másodperceket (paraméterben kapja) a játékablak jobb felső sarkába</p>
+<h5 id="void-refresh_screen"><code>void refresh_screen()</code>:</h5>
+<p>Frissíti a játékablakot.</p>
+<h5 id="void-draw_leaderboardresult-results-int-length"><code>void draw_leaderboard(Result results[], int length)</code></h5>
+<p>Kirajzolja az eredménytáblát a játékterület helyére.</p>
+<h4 id="fontosabb-segédfüggvények">Fontosabb segédfüggvények</h4>
+<h5 id="void-position_to_field_coordinatesint-posx-int-posy-int-rows-int-cols-int-coordx-int-coordy"><code>void position_to_field_coordinates(int posX, int posY, int rows, int cols, int *coordX, int *coordY)</code>:</h5>
+<p>Ez a függvény egy grafikai pozíciót (<code>posX</code>, <code>posY</code>) egy adott méretű játéktáblára értemezve (<code>rows</code>, <code>cols</code>) mező-koordinátákká konvertál: <code>coordX</code>, <code>coordY</code>. A függvény az utols két paraméterét cím szerint veszi át és az eredmény értékét fogja beléjük írni. Amennyiben a kapott grafikai pozíció nincs a játékmezőben, ez esetben <code>coordX</code> és <code>coordY</code> értéke <code>-1</code> lesz.</p>
+<h5 id="bool-is_in_rangeint-x-int-y-int-minx-int-maxx-int-miny-int-maxy"><code>bool is_in_range(int x, int y, int minX, int maxX, int minY, int maxY)</code>:</h5>
+<p>Ellenőrzi, hogy egy adott pont (<code>x</code>, <code>y</code>) benne van-e a többi paraméter által határolt téglalapban.</p>
+<h5 id="bool-is_position_on_faceint-posx-int-posy"><code>bool is_position_on_face(int posX, int posY)</code>:</h5>
+<p>Ellenőrzi, hogy az adott grafikai pozíció a játékablakon található arcon van-e.</p>
+<h5 id="bool-is_position_on_buttonint-posx-int-posy"><code>bool is_position_on_button(int posX, int posY)</code></h5>
+<p>Ellenőrzi, hogy az adott grafikai pozíció az eredménytábla / játék módválasztó gombon van-e.</p>
+<h3 id="játékmodul">Játékmodul</h3>
+<p>Ebben a modulban található a játék logikájához szükséges összes függvény, változó, konstans. A <code>game.c</code> és <code>game.h</code> fájlok alkotják ezt a modult.</p>
+<h4 id="típusok-1">Típusok</h4>
+<h5 id="mező-field">Mező (Field)</h5>
+<p>Egy mezőt jelent.</p>
+<pre class=" language-c"><code class="prism  language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span> Field <span class="token punctuation">{</span>  
+ FieldType type<span class="token punctuation">;</span> 
+ bool is_mine<span class="token punctuation">;</span> 
+ <span class="token keyword">int</span> x<span class="token punctuation">;</span> 
+ <span class="token keyword">int</span> y<span class="token punctuation">;</span> 
+ <span class="token keyword">int</span> neighbour_mines_count<span class="token punctuation">;</span>
+ <span class="token punctuation">}</span> Field<span class="token punctuation">;</span>  
+</code></pre>
+<p>A <code>type</code> nevű tulajdonság a FieldType valamely lehetséges értékét veszi fel, melyek lentebb láthatók.<br>
+Az <code>is_mine</code> tulajdonság igaz értéke esetén a mezőt aknaként jelöli meg.<br>
+Az <code>x</code> és <code>y</code> tulajdonságok a mező koordinátáit tárolják.<br>
+A <code>neighbour_mines_count</code> pedig a mezővel szomszédos aknák számát tárolja.</p>
+<pre class=" language-c"><code class="prism  language-c"><span class="token keyword">typedef</span> <span class="token keyword">enum</span> FieldType <span class="token punctuation">{</span>  
+	 FIELD_STANDARD<span class="token punctuation">,</span> 
+	 FIELD_EMPTY<span class="token punctuation">,</span> 
+	 FIELD_FLAGGED<span class="token punctuation">,</span> 
+	 FIELD_QUESTION<span class="token punctuation">,</span> 
+	 FIELD_QUESTION_PRESSED<span class="token punctuation">,</span> 
+	 FIELD_MINE_REVEALED<span class="token punctuation">,</span> 
+	 FIELD_MINE_EXPLODED<span class="token punctuation">,</span> 
+	 FIELD_MINE_CROSSED<span class="token punctuation">,</span> 
+	 FIELD_NUMBERED
+<span class="token punctuation">}</span> FieldType<span class="token punctuation">;</span>  
+</code></pre>
+<h5 id="aknamező-fieldset">Aknamező (FieldSet)</h5>
+<p>Mezők összességét jelenti, melyek együtt egy teljes aknamezőt alkotnak.</p>
+<pre class=" language-c"><code class="prism  language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span> FieldSet <span class="token punctuation">{</span>  
+ Field <span class="token operator">*</span><span class="token operator">*</span>fields<span class="token punctuation">;</span> 
+ <span class="token keyword">int</span> rows<span class="token punctuation">;</span> 
+ <span class="token keyword">int</span> cols<span class="token punctuation">;</span>
+<span class="token punctuation">}</span> FieldSet<span class="token punctuation">;</span>  
+</code></pre>
+<p>A <code>fields</code> tulajdonság egy mezőket (Field) tartóalmazó kétdimenziós tömb.<br>
+A <code>rows</code>, valamint a <code>cols</code> az aknamező (és a <code>fields</code> 2D tömb) méretét határozza meg.</p>
+<h5 id="arc-facetype">Arc (FaceType)</h5>
+<p>Definiálja az egyes arctípusokat:</p>
+<pre class=" language-c"><code class="prism  language-c"><span class="token keyword">typedef</span> <span class="token keyword">enum</span> FaceType <span class="token punctuation">{</span>  
+	FACE_SMILING<span class="token punctuation">,</span> 
+	FACE_SMILING_PRESSED<span class="token punctuation">,</span> 
+	FACE_THREATENED<span class="token punctuation">,</span> 
+	FACE_SUNGLASSES<span class="token punctuation">,</span> 
+	FACE_DEAD
+<span class="token punctuation">}</span> FaceType<span class="token punctuation">;</span>  
+</code></pre>
+<h5 id="játékparaméterek-gameparams">Játékparaméterek (GameParams)</h5>
+<p>Tartalmazza a játék felhasználó által (is) megadható paramétereit.</p>
+<pre class=" language-c"><code class="prism  language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span> GameParams <span class="token punctuation">{</span>  
+	<span class="token keyword">char</span> <span class="token operator">*</span>player_name<span class="token punctuation">;</span> 
+	<span class="token keyword">int</span> cols<span class="token punctuation">;</span> 
+	<span class="token keyword">int</span> rows<span class="token punctuation">;</span> 
+	<span class="token keyword">int</span> mine_count<span class="token punctuation">;</span> 
+	<span class="token keyword">int</span> time_limit<span class="token punctuation">;</span>
+<span class="token punctuation">}</span> GameParams<span class="token punctuation">;</span>  
+</code></pre>
+<h5 id="játékállapot-gamestate">Játékállapot (GameState)</h5>
+<p>Tartalmazza a játék mindenkori állapotához szükséges változókat, melyek a program viselkedését, reakcióját befolyásolják.<br>
+Az eltelt másodperceket, megtalált aknákat, hogy folyik-e a játék éppen, az eredményjelző meg van-e nyitva, hogy melyik mezőt, vagy esetleg az arcot nyomtuk-e meg.</p>
+<pre class=" language-c"><code class="prism  language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span> GameState <span class="token punctuation">{</span>  
+	<span class="token keyword">int</span> mines_found<span class="token punctuation">;</span>
+	<span class="token keyword">int</span> time_elapsed<span class="token punctuation">;</span> 
+	bool game_started<span class="token punctuation">;</span> 
+	bool game_finished<span class="token punctuation">;</span> 
+	bool leaderboard_opened<span class="token punctuation">;</span> 
+	bool face_pressed<span class="token punctuation">;</span> 
+	Field <span class="token operator">*</span>pressed_field<span class="token punctuation">;</span>
+<span class="token punctuation">}</span> GameState<span class="token punctuation">;</span>  
+</code></pre>
+<h5 id="játék-game">Játék (Game)</h5>
+<p>Egybefoglal mindent, ami a játék (logikájához) szükséges, a fent definiált strukturák egy-egy példányát.</p>
+<pre class=" language-c"><code class="prism  language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span> Game <span class="token punctuation">{</span>  
+	FieldSet fieldSet<span class="token punctuation">;</span> 
+	GameParams params<span class="token punctuation">;</span> 
+	GameState state<span class="token punctuation">;</span>
+<span class="token punctuation">}</span> Game<span class="token punctuation">;</span>  
+</code></pre>
+<h4 id="fontosabb-belső-globális-változók-1">Fontosabb belső globális változók</h4>
+<p>Az alábbi változók csak a modulon belül globálisak, kívülről, más modulokból nem elérhetőek.</p>
+<h5 id="static-sdl_timerid-timer"><code>static SDL_TimerID timer</code></h5>
+<p>Időzítő, amely a játék kezdete óta eltelt másodperceket számolja.</p>
+<h4 id="fontosabb-függvények-1">Fontosabb függvények</h4>
+<h5 id="void-start_gamegameparams-params"><code>void start_game(GameParams params)</code></h5>
+<p>Elindítja a játékot, és az ahhoz tartozó event loopot. Inicializálja a játékhoz szükséges összes változót, és addig nem tér vissza, amíg a játékos ki nem lép a programból.</p>
+<h5 id="void-reset_gamegameparams-params"><code>void reset_game(GameParams params)</code></h5>
+<p>A játék összes paraméterét a kezdeti állapotba állítja a kapott paramétereknek megfelelően. Inicializálja a játékmezőket (és amennyiben volt, a korábbi aknamezőt felszabadítja), az aknák számát visszaállítja, valamint az eltelt másodperceket nullázza. Újrarajzoltatja a játékterületet.</p>
+<h5 id="void-handle_mouse_downuint8-button-int-x-int-y-game-game"><code>void handle_mouse_down(Uint8 button, int x, int y, Game *game)</code></h5>
+<p>Feldolgozza az egérgomb lenyomását.</p>
+<p>Bal egérgomb lenyomása esetén több eset lehet:</p>
+<ul>
+<li>amennyiben mezőre kattintott, megjelöli, hogy melyik mező fölött nyomtuk meg az egérgombot.</li>
+<li>Ha az arcra kattintott, akkor megjegyzi, hogy az arcra kattintott a felhasználó.</li>
+<li>Ha az eredményjelző / játék gombra kattintott, akkor megjelenik az eredményjelző, ha pedig már meg volt nyitva, akkor megjelenik a játéktábla és egy új játék kezdődik.</li>
+</ul>
+<p>Jobb egérgomb lenyomása esetén, ha az mezőn történt, akkor megjelöli a mezőt zászlóval, ha már van rajta zászló, akkor kérdőjellel, ha pedig kérdőjel van rajta, akkor törli a jelölést. Zászlóval való jelölés esetén a bal felső sarokban látható aknák száma csökken eggyel. Ha töröljük a zászlót, akkor visszanő.</p>
+<h5 id="void-handle_mouse_upuint8-button-int-x-int-y-game-game"><code>void handle_mouse_up(Uint8 button, int x, int y, Game *game)</code></h5>
+<p>Feldolgozza az egérgomb felengedését</p>
+<p>Bal egérgomb lenyomása esetén amennyiben mező fölött engedte fel a gombot, a szabályoknak megfelelő műveletet hajtja végre. Ha aknára kattintott, vége a játéknak. Ha üres mezőre, akkor felfedi azt, valamint a szomszédos üres mezőket is, továbbá kijelzi a szomszédos aknák számát. Ha az arc felett engedte el az egeret, akkor új játék kezdődik a jelenlegivel megegyező paraméterekkel.</p>
+<h5 id="void-free_field_memoryfieldset-fieldset"><code>void free_field_memory(FieldSet *fieldSet)</code>:</h5>
+<p>Felszabadítja az aknamező által elfoglalt memóriaterületet.</p>
+<h4 id="fontosabb-segédfüggvények-1">Fontosabb segédfüggvények</h4>
+<h5 id="void-init_field_setgame-game"><code>void init_field_set(Game *game)</code>:</h5>
+<p>Inicializálja az aknamezőt. Lefoglalja a szükséges memóriaterületet, majd mindegyik mezőt alaphelyzetbe állítja</p>
+<h5 id="void-place_minesfield-start-fieldset-fieldset"><code>void place_mines(Field start, FieldSet fieldSet)</code>:</h5>
+<p>Kihelyezi az aknákat a pályán véletlenszerűen. A játék szabályainak megfelelően a felhasználó által először felfedett mező szomszédságában, valamint a mezőn nem lehet akna. Ezt a mezőt a függvény a paramétereként kapja meg.</p>
+<h5 id="field-find_fieldint-x-int-y-fieldset-fieldset"><code>Field *find_field(int x, int y, FieldSet fieldSet)</code></h5>
+<p>Koordináták által megkeres egy mezőt az aknaterületen.</p>
+<h5 id="void-reveal_minesfieldset-fieldset"><code>void reveal_mines(FieldSet fieldSet)</code></h5>
+<p>Vesztett játék esetén felfedi az aknákat. Pirossal jelöli a felrobbant aknát, a tévesen megjelölt aknát pedig áthúzott aknával jelöli.</p>
+<h5 id="int-count_neighbour_minesfield-field-fieldset-fieldset"><code>int count_neighbour_mines(Field field, FieldSet fieldSet)</code>:</h5>
+<p>Megszámolja, hogy egy adott mező körül hány darab akna található.</p>
+<h5 id="autodiscover_empty_fieldsfield-field-fieldset-fieldset"><code>autodiscover_empty_fields(Field *field, FieldSet fieldSet)</code>:</h5>
+<p>Felfedi az adott mezővel összefüggő üres területeket. Rekurzív módon működik.</p>
+<h5 id="bool-is_winnerfieldset-fieldset"><code>bool is_winner(FieldSet fieldSet)</code>:</h5>
+<p>Ellenőrzi, hogy a játékos nyert-e.</p>
+<h3 id="eredményelző-modul">Eredményelző modul</h3>
+<p>Ebben a modulban tallálható az eredményhelző (leaderboard) betöltéséhez és kijelzéséhel található minden függvény.</p>
+<h4 id="típusok-2">Típusok</h4>
+<h5 id="eredmény-result">Eredmény (Result)</h5>
+<p>Egy elért eredményt reprezentál. Eltárolja a játékosnevet, a pálya méretét, az aknák számát, valamint a játék befejezéséig eltelt másodperceket.</p>
+<pre class=" language-c"><code class="prism  language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span> Result <span class="token punctuation">{</span>  
+	<span class="token keyword">char</span> player_name<span class="token punctuation">[</span><span class="token number">100</span> <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+	<span class="token keyword">int</span> seconds<span class="token punctuation">;</span> 
+	<span class="token keyword">int</span> mines<span class="token punctuation">;</span> 
+	<span class="token keyword">int</span> cols<span class="token punctuation">;</span> 
+	<span class="token keyword">int</span> rows<span class="token punctuation">;</span>
+<span class="token punctuation">}</span> Result<span class="token punctuation">;</span>  
+</code></pre>
+<h4 id="fontos-makrók">Fontos makrók</h4>
+<p>#####<code>min(a, b)</code><br>
+Visszatér két szám mimimumával.</p>
+<h5 id="maximum_results"><code>MAXIMUM_RESULTS</code></h5>
+<p>A betöltendő (és megjelenítendő) eredmények maximális száma. (Alapértelemezetten 5)</p>
+<h4 id="fontosabb-belső-globális-változók-2">Fontosabb belső globális változók</h4>
+<h5 id="default_filename"><code>DEFAULT_FILENAME</code></h5>
+<p>A fájl neve, ahol az eredmények tárolva vannak.</p>
+<h5 id="top_results"><code>top_results</code></h5>
+<p>A top [<code>MAXIMUM_RESULTS</code>] eredményt tárolja. (Alapértelemezetten 5)</p>
+<h5 id="fp"><code>fp</code></h5>
+<p>A fájlkezeléshez szükséges <code>FILE</code> pointer.</p>
+<h4 id="fontosabb-függvények-2">Fontosabb függvények</h4>
+<h5 id="bool-init_leaderboardint-p_cols-int-p_rows-int-p_mines"><code>bool init_leaderboard(int p_cols, int p_rows, int p_mines)</code></h5>
+<p>Ezzel a függvénnyel kell inicializálni az eredményjelzőt. Paraméterként kéri a játékterület méreteit, valamint az aknák számát. Ez alapján olvassa majd be a megfelelő eredményeket.</p>
+<h5 id="void-save_game_resultschar-player_name-int-seconds"><code>void save_game_results(char *player_name, int seconds)</code></h5>
+<p>Ezzel a függvénnyel el lehet menteni egy játék eredményét. Paraméterként a játékos nevét kapja, valamint a játék kezdete után eltelt másodpercek számát.</p>
+<h5 id="void-load_top_results"><code>void load_top_results()</code></h5>
+<p>Betölti a top [<code>MAXIMUM_RESULTS</code>] (5) eredményt egy tömbbe. A 0. elem a legjobb eredménynek felel meg, és a másodpercek szerint növekvő sorrendben kerül a tömb feltöltésre.</p>
+<h5 id="void-show_leaderboard"><code>void show_leaderboard()</code></h5>
+<p>Megjeleníti az eredményjelzőt.</p>
+<h5 id="void-close_leaderboard"><code>void close_leaderboard()</code></h5>
+<p>Bezárja az eredményjelző modult, felszabadítja a felhasznált memóriát.</p>
+<h4 id="fontosabb-segédfüggvények-2">Fontosabb segédfüggvények</h4>
+<h5 id="void-write_header"><code>void write_header()</code></h5>
+<p>Üres fájl esetén a CSV headert beleírja a fájlba. (Azaz az oszlopok nevét)</p>
+<h5 id="void-put_resultresult-result"><code>void put_result(Result result)</code></h5>
+<p>Behelyez egy eredményt (<code>result</code>) a legjobb eredményeket tartalmazó tömbbe, a megfelelő helyre. (Amennyiben belefér.)</p>
+<h2 id="működés">Működés</h2>
+<p>A program belépési pontja a főmodulban van. Itt kerülnek beállításra a játék paraméterei a parancssori argumentumoknak megfelelően. Ha valamelyik nincs megadva, az alapértelmezett értékek kerülnek beállításra.<br>
+A parancssori argumentumok:<br>
+<code>minesweeper [aknamezo_szelessege] [aknamezo_magassage] [aknak_szama] [idolimit_masodpercekben]</code></p>
+<p>Megjelenik az ablak, minden grafikus elem alaphelyzetbe kerül, a játék állapota is kezdeti állapotba áll, majd elindul az event loop. Minden ismétlésnél az ablak frissítésre kerül.<br>
+A játék kezdeti állapotba állításakor a program inicializálja a játékmodulban a belső globális változókat, lefoglalja a memóriaterületet a mezőknek, majd kirajzolja őket.</p>
+<p>Egérkattintás esetén a játékmodul megfelelő függvénye feldolgozza az eseményt. A függvény működése fentebb van leírva.</p>
+<p>Amennyiben az Eredmények gombra (szövegre) kattint, amely a bal felső sarokban található, megjelenik az eredményjelző. A program frissíti a betöltött eredményeket. Ez a gomb csak akkor kattintható, ha nincs éppen játék folyamatban.</p>
+<p>Ha már meg van nyitva az eredményjelző, akkor ismét a gombra - melynek a felirata már “Játék” - kattintva újra megjelenik a játéktábla és új játék kezdődik.</p>
+<p>Amennyiben a játékos az ablakon található piros x-re kattint, a játékmezők, a grafika és az eredményjelző által lefoglalt memória felszabadításra kerül, majd a program kilép.</p>
+</div>
+
+
+
+</body></html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<!-- saved from url=(0080)file:///home/csaba/Documents/bme/minesweeper/docs/user_documentation_hu_tmp.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome file</title>
+  <link rel="stylesheet" href="./user_documentation_hu_files/style.css">
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1 id="aknakereső---felhasználói-dokumentáció">Aknakereső - Felhasználói Dokumentáció</h1>
+<h2 id="a-játékszabályok">A játékszabályok</h2>
+<p>Az aknakereső egy logikai játék, amely egy aknamezőn játszódik, a játékos célja pedig a mezőn található aknák felderítése. Ebben több dolog segíti: megjelölheti az általa aknának vélt mezőket, megtudhatja a már felderített mezők szomszédságában levő aknák számát, továbbá ha üres mezőt talál, akkor az azzal összefüggő további üres mezők is fel lesznek derítve.</p>
+<p>A program az aknakereső játék szabályrendszere alapján működik, amely a következő fő pontokból áll:</p>
+<ul>
+<li>A játék addig tart, amíg minden egyes aknát nem tartalmazó mező fel nincs fedve.</li>
+<li>A játéknak vége, ha a játékos aknát tartalmaző mezőre lép, vagy a beállított időkorlát lejár.</li>
+<li>A játékos által elsőként kiválasztott mezőn, valamint annak szomszédságában nem lehet akna.</li>
+<li>A mező kiválasztása az egér gombjának felengedésével válik véglegessé.</li>
+<li>Az egér jobb gombjával a mező megjelölhető zászlóval, vagy kérdőjellel. Utóbbi ritkán használt.</li>
+</ul>
+<p>A  játékban előfordulhatnak olyan szituációk, amelyeket pusztán logikai úton nem lehet megoldani. Ezeket az eseteket a játék nem figyeli, ilyenkor sajnos a szerencsére van bízva a játék kimenetele.</p>
+<h2 id="a-program-követelményei">A program követelményei</h2>
+<p>A program futtatásához a végrehajtható fájlon kívül szükségesek az alábbi fájlok is:</p>
+<ul>
+<li><code>faces.png</code></li>
+<li><code>fields.png</code></li>
+<li><code>mine_numbers.png</code></li>
+<li><code>numbers.png</code><br>
+Ezeket a fájlokat a futtatható programmal megegyező mappába kell helyezni.</li>
+</ul>
+<h2 id="a-program-indítása">A program indítása</h2>
+<p>Legcélszerűbb a programot a parancssorból (avagy terminálból) indítani, mivel így egyszerűen megszabhatóak a játék paraméterei.</p>
+<p>Az indítás módja:<br>
+<code>minesweeper [játékosnév] [pálya_szélessége] [pálya_magassága] [aknák_száma] [időlimit]</code></p>
+<p>A paraméterek magyarázata:</p>
+<ul>
+<li>játékosnév: A játékos neve szőköz nélkül.</li>
+<li>pálya szélessége: Egy szám: az aknamezőn az oszlopok száma.</li>
+<li>pálya magassága: Egy szám: az aknamezőn a sorok száma.</li>
+<li>aknák száma: Egy szám: a pályán található aknák száma.</li>
+<li>időlimit: Szintén egy szám: a játék kezdetétől eltelt másodpercek maximális száma.</li>
+</ul>
+<p>Minden paraméter opcionális. Alapértelmezésben</p>
+<ul>
+<li>játékosnév: “Anonymous”,</li>
+<li>szélesség: 9,</li>
+<li>magasság: 9,</li>
+<li>aknák száma: 10,</li>
+<li>időlimit: nincs</li>
+</ul>
+<p><strong>Figyelem!</strong> A pálya mérete és az aknák száma nincs limitálva, ugyanakkor ha a megadott méret nagyobb, mint ami a képernyőre kiférhet, akkor a program hibával ki fog lépni.<br>
+Amennyiben az aknák száma nagyon közel kerül a pályán található mezők számához, abban az esetben az aknák generálása hosszú időt vehet igénybe.</p>
+<h2 id="a-játék">A játék</h2>
+<p>A játéktáblát egérrel lehet vezérelni. Mezőre kattintva a fenti szabályzatnak megfelelő esemény fog bekövetkezni.</p>
+<p>A játéktábla közepén található fejre kattintva mindig új játék kezdődik, függetlenül attól, hogy a jelenlegi befejeződött-e.</p>
+<p>Ha a fej napszemüveget vesz fel, akkor megnyertük a játékot. Ha viszont halott (x.x) arcot mutat, akkor sajnos vesztettünk. (Tulajodnképpen felrobbantunk az aknamezőn.)</p>
+<p>Bal oldalt, a bal felső sarokban láthatjuk az aknák számát. Ez minden egyes lehelyezett zászlóval csökken. (0 alá nem!). Ha törlünk egy zászlót, akkor értelemszerűen nagyobb lesz eggyel.</p>
+<p>Jobb oldalt, a jobb felső sarokban pedig az eltelt másodperceket láthatjuk. Ez folyamatosan számol a játék kezdetétől. Ha nincs beállított limit, akkor csak az eredmény mentésekor van jelentősége. Egyébként pedig a beállított limit elérésekor megállítja a játékot. Ha van beállított limit, akkor a játék elkezdése előtt a limitet mutatja.</p>
+<h2 id="eredmények">Eredmények</h2>
+<p>A bal felső sarokban található még egy gomb, amellyel válthatunk az eredményjelző és a játék között. Folyamatban levő játék esetén a gomb inaktív, nem lehet megnyomni. Amikor megnyílik az eredményjelző, a gomb felirata “Játék”-ra változik. Ha megnyomjuk, visszatérünk a játékhoz, és új játék indul.</p>
+<p>A program az eredményeket a vele azonos mappában a <code>results.csv</code> fájlban tárolja, CSV formátumban. Ez szinte bármelyik táblázatkezelő szoftverrel megnyitható.</p>
+<h2 id="befejezés">Befejezés</h2>
+<p>A program a jobb (vagy bizonyos rendszereken bal) felső sarokban található (általában) piros (általában) x-el zárható be. Egyébként az Alt+F4 is működik.</p>
+</div>
+
+
+
+</body></html>
